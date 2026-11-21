@@ -1,0 +1,123 @@
+/* Styled after the moderncv "casual" layout of Profile.pdf */
+:root {
+  --accent: #1e626d;        /* teal from the LaTeX color1 */
+  --accent-soft: #9fbcc1;   /* light bullet colour (accent at ~45%) */
+  --text: #1a1a1a;
+  --muted: #7a7a7a;
+  --rule: #8a8a8a;
+  --bg: #ffffff;
+  --page: 760px;
+  --font: system-ui, -apple-system, "Segoe UI", Calibri, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.page {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem 4rem;
+}
+
+/* Header: round photo left, name right, rule underneath */
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 2.5rem;
+}
+
+.photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-bottom: -0.4rem;   /* sits on the rule, as in the PDF */
+}
+
+.head-text { text-align: right; }
+
+.name {
+  margin: 0;
+  font-size: 2.3rem;
+  font-weight: 400;
+  line-height: 1.1;
+}
+.name .first { color: var(--muted); }
+.name .last  { color: var(--text); }
+
+
+a { color: var(--accent); text-decoration: none; }
+a:hover, a:focus-visible { text-decoration: underline; }
+
+/* Section titles with the coloured bar to their left */
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 2.2rem 0 1rem;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--accent);
+}
+h2::before {
+  content: "";
+  width: 6rem;
+  height: 0.45rem;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+p { margin: 0 0 1rem; text-align: justify; hyphens: auto; }
+
+ul {
+  margin: 0;
+  padding-left: 1.4rem;
+  list-style: none;
+}
+li { position: relative; margin: 0.15rem 0; }
+li::before {
+  content: "";
+  position: absolute;
+  left: -1rem;
+  top: 0.7em;
+  width: 0.35rem;
+  height: 0.35rem;
+  background: var(--accent-soft);
+}
+.label { color: var(--text); }
+
+/* Phones */
+@media (max-width: 560px) {
+  .page { padding-top: 2rem; }
+  .head { flex-direction: column; align-items: center; text-align: center; gap: 1rem; padding-bottom: 1rem; }
+  .head-text { text-align: center; }
+  .photo { width: 120px; height: 120px; margin-bottom: 0; }
+  .name { font-size: 2rem; }
+  h2::before { width: 2.5rem; }
+  p { text-align: left; }
+}
+
+/* Printing / Save as PDF from the browser */
+@media print {
+  @page { size: A4; margin: 2.2cm 2.5cm 1.8cm; }
+  body { font-size: 10.5pt; }
+  .page { max-width: none; padding: 0; }
+  a { color: var(--text); }
+  h2, li { break-inside: avoid; }
+}
