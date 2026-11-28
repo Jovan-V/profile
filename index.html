@@ -2,14 +2,110 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Keeps the page out of search engines: reachable by anyone with the link, but not found by searching your name.
-       Delete this line if you later want it to be searchable. -->
+  <!-- minimum-scale=1 stops pinch-zooming out below 100% on mobile; zooming in is unaffected -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+  <!-- Keeps the page out of search engines -->
   <meta name="robots" content="noindex, nofollow">
-  <title>Jovan Varsani</title>
+  <title>Jovan</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Without JS there are no lines to draw, so skip the loader entirely -->
+  <noscript><style>#loader { display: none; }</style></noscript>
 </head>
 <body>
+  <!-- Loading screen: tide lines draw in over the page while it loads underneath -->
+  <!-- Everything (lines, white bands, monogram) is drawn into this one SVG by the script below,
+       so the exit can uncover the page, the box and the monogram in the same wave pattern -->
+  <div id="loader" aria-hidden="true">
+    <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"></svg>
+  </div>
+  <script>
+    (function () {
+      var el = document.getElementById('loader');
+      // Set to true to only show the loader on the first page view of a visit
+      var oncePerVisit = false;
+      if (oncePerVisit) {
+        try {
+          if (sessionStorage.getItem('loader-seen')) { el.remove(); return; }
+          sessionStorage.setItem('loader-seen', '1');
+        } catch (e) {}
+      }
+
+      var svg = el.firstElementChild, n = 16;
+
+      // Line i's height at x (rows -1 and 16 are the extra bands above and below the set)
+      function wave(i, x) {
+        var k = Math.min(Math.max(i, 0), n - 1);
+        var y0 = 70 + i * 760 / (n - 1), a = 12 + 18 * Math.sin(Math.PI * k / (n - 1));
+        return y0 + a * Math.sin(x * .006 + 2.1 + i * .25) + a * .4 * Math.sin(x * .014 + 4.2 + i * .4);
+      }
+
+      // Ringed JV monogram: [path, draw delay ms, draw duration ms, opacity]
+      var MONO = [
+        ['M800 190A230 230 0 1 1 800 650A230 230 0 1 1 800 190', 200, 1600, 1],
+        ['M800 175A245 245 0 1 0 800 665A245 245 0 1 0 800 175', 350, 1600, .5],
+        ['M700 300L790 300', 700, 500, 1],
+        ['M745 300L745 520Q745 590 680 590Q630 590 615 545', 800, 900, 1],
+        ['M805 300L890 560L975 300', 1100, 800, 1]
+      ];
+      var mono = MONO.map(function (m) {
+        return '<path pathLength="1" d="' + m[0] + '" style="animation-delay:' + m[1] + 'ms;animation-duration:' + m[2] + 'ms;opacity:' + m[3] + '"/>';
+      }).join('');
+
+      // For each row: a wide white band (together they cover the page), the teal line on top,
+      // and a copy of the monogram clipped to that row's strip. On exit, each strip's clip slides
+      // right in step with its band, so the monogram is wiped away by the same band that uncovers the page.
+      var bands = '', lines = '', clips = '', monos = '';
+      for (var i = -1; i <= n; i++) {
+        var d = '';
+        for (var x = -20; x <= 1620; x += 40) d += (x < 0 ? 'M' : 'L') + x + ' ' + Math.round(wave(i, x));
+        bands += '<path class="band" pathLength="1" d="' + d + '" style="--i:' + i + '"/>';
+        if (i >= 0 && i < n) lines += '<path pathLength="1" d="' + d + '" style="animation-delay:' + i * 50 + 'ms;--i:' + i + '"/>';
+        var top = i < 0 ? -500 : (wave(i - 1, 800) + wave(i, 800)) / 2;
+        var bottom = i >= n ? 1500 : (wave(i, 800) + wave(i + 1, 800)) / 2;
+        clips += '<clipPath id="mc' + (i + 1) + '"><rect class="wipe" x="-20" y="' + top.toFixed(1) +
+          '" width="1700" height="' + (bottom - top).toFixed(1) + '" style="--i:' + i + '"/></clipPath>';
+        monos += '<g clip-path="url(#mc' + (i + 1) + ')"><g class="monogram">' + mono + '</g></g>';
+      }
+      // The white box behind the monogram is a hole in the lines (not a separate box),
+      // so the bands underneath show through it and carry it away with them
+      svg.innerHTML =
+        '<defs><mask id="box" maskUnits="userSpaceOnUse" x="-100" y="-100" width="1800" height="1100">' +
+        '<rect x="-100" y="-100" width="1800" height="1100" fill="#fff"/><rect id="box-hole" fill="#000"/></mask>' +
+        clips + '</defs>' + bands + '<g mask="url(#box)">' + lines + '</g>' + monos;
+
+      // Keep the monogram 120px across and the box 197 x 165px on any screen size
+      function layout() {
+        var s = Math.max(innerWidth / 1600, innerHeight / 900);   // screen px per SVG unit
+        var m = 120 / s, bw = 197 / s, bh = 165 / s;
+        var hole = svg.querySelector('#box-hole');
+        hole.setAttribute('x', 800 - bw / 2); hole.setAttribute('y', 450 - bh / 2);
+        hole.setAttribute('width', bw); hole.setAttribute('height', bh);
+        var t = 'translate(' + (800 - m / 2) + ' ' + (450 - m / 2) + ') scale(' + m / 500 + ') translate(-550 -170)';
+        svg.querySelectorAll('.monogram').forEach(function (g) { g.setAttribute('transform', t); });
+      }
+      layout();
+      addEventListener('resize', layout);
+
+      // Leave once the page has loaded, but not before the lines have finished drawing
+      var start = Date.now();
+      var reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var minTime = reduceMotion ? 300 : 2100;
+      var EXIT_TIME = 1800;   // length of the tide exit (ms), styles in style.css
+      var leaving = false;
+      function hide() {
+        if (leaving) return;
+        leaving = true;
+        // Visitors who ask for less motion get the page straight away, without the exit
+        if (reduceMotion) { el.remove(); return; }
+        el.classList.add('leaving');
+        setTimeout(function () { el.remove(); }, EXIT_TIME);
+      }
+      function whenLoaded() { setTimeout(hide, Math.max(0, minTime - (Date.now() - start))); }
+      if (document.readyState === 'complete') whenLoaded(); else addEventListener('load', whenLoaded);
+      el.addEventListener('click', hide);
+    })();
+  </script>
+
   <main class="page">
 
     <header class="head">
@@ -20,7 +116,7 @@
     </header>
 
     <section>
-      <h2>Hobbies</h2>
+      <h2>Words</h2>
       <p>
         I was born in January 2002, in London. I lived in Seychelles from 2009 until I went to uni in 2020 in the UK.
         I’m now back in Seychelles, working in a construction manager type role, currently full time on a fancy hotel project.
@@ -31,7 +127,6 @@
         I’m interested in meeting people with similar or compatible values, and working towards a healthy and supportive relationship.
         Also, I am 180 cm tall.
       </p>
-      <!-- TODO (draft notes from the PDF, not shown on the page): something about ambition; younger brother -->
     </section>
 
     <section>
@@ -39,7 +134,7 @@
       <ul>
         <li><span class="label">Education:</span> University of Cambridge, MEng Civil, Structural and Environmental Engineering</li>
         <li><span class="label">Father’s name:</span> Surya Varsani, studied at the University of Warwick, UK</li>
-        <li><span class="label">Mother’s name:</span> Foram Varsani<!-- TODO: studied in … --></li>
+        <li><span class="label">Mother’s name:</span> Foram Varsani</li>
       </ul>
     </section>
 

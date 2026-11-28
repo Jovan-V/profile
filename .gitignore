@@ -5,3 +5,9 @@ desktop.ini
 
 # Editor settings
 .vscode/
+
+# Private notes
+Plans.md
+
+# Experiments, not part of the site
+sandbox/

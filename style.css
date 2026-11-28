@@ -1,6 +1,6 @@
 /* Styled after the moderncv "casual" layout of Profile.pdf */
 :root {
-  --accent: #1e626d;        /* teal from the LaTeX color1 */
+  --accent: #1e626d;        
   --accent-soft: #9fbcc1;   /* light bullet colour (accent at ~45%) */
   --text: #1a1a1a;
   --muted: #7a7a7a;
@@ -113,11 +113,53 @@ li::before {
   p { text-align: left; }
 }
 
-/* Printing / Save as PDF from the browser */
+/* Loading screen: white, with teal tide lines and a ringed JV monogram.
+   The script in index.html draws everything into the SVG. On exit, each line pulls away to the
+   right and its white band follows just behind, uncovering the page (and wiping away the box and
+   monogram) in the same wave pattern. */
+#loader {
+  position: fixed; inset: 0; z-index: 100;
+  background: #fff;
+  /* Safety net: if the script ever fails, the loader still gets out of the way */
+  animation: loader-out .7s ease 6s forwards;
+}
+@keyframes loader-out { to { opacity: 0; visibility: hidden; } }
+/* During the exit the white bands cover the page instead, and the safety net is cancelled */
+#loader.leaving { background: transparent; animation: none; }
+#loader svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#loader path {
+  fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  /* pathLength="1" on each path, so the dash covers exactly one line's length */
+  stroke-dasharray: 1 1.05; stroke-dashoffset: 1.02;
+  animation: loader-draw 1.2s cubic-bezier(.45, .05, .25, 1) forwards;
+}
+@keyframes loader-draw { to { stroke-dashoffset: 0; } }
+#loader .monogram path { stroke-width: 7; }   /* in the monogram's own 500-unit drawing space */
+/* One wide white band under each line: together they cover the page until the exit moves them away */
+#loader path.band { stroke: #fff; stroke-width: 80; stroke-linecap: butt; stroke-dashoffset: 0; animation: none; }
+
+/* Exit: lines keep drawing forward and pull away; each band follows 150 ms behind its line */
+@keyframes loader-undraw { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -1.02; } }
+#loader.leaving path { animation: loader-undraw .8s cubic-bezier(.55, 0, .75, .3) both; }
+#loader.leaving path.band { animation-delay: calc(var(--i) * 50ms + 150ms); }
+/* Monogram strokes pull away the same way, in the order they were drawn */
+#loader.leaving .monogram path { animation-duration: .6s !important; }
+#loader.leaving .monogram path:nth-child(1) { animation-delay: 450ms !important; }
+#loader.leaving .monogram path:nth-child(2) { animation-delay: 550ms !important; }
+#loader.leaving .monogram path:nth-child(3) { animation-delay: 700ms !important; }
+#loader.leaving .monogram path:nth-child(4) { animation-delay: 750ms !important; }
+#loader.leaving .monogram path:nth-child(5) { animation-delay: 850ms !important; }
+/* Each monogram copy is clipped to one row; its clip slides right in step with that row's band */
+@keyframes loader-wipe { to { transform: translateX(1673px); } }
+#loader.leaving .wipe {
+  animation: loader-wipe .8s cubic-bezier(.55, 0, .75, .3) both;
+  animation-delay: calc(var(--i) * 50ms + 150ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  #loader path { animation: none; stroke-dashoffset: 0; }
+}
+
+/* Printing / Save as PDF is blocked: the printout is blank */
 @media print {
-  @page { size: A4; margin: 2.2cm 2.5cm 1.8cm; }
-  body { font-size: 10.5pt; }
-  .page { max-width: none; padding: 0; }
-  a { color: var(--text); }
-  h2, li { break-inside: avoid; }
+  html, body { display: none !important; }
 }
